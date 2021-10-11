@@ -1,3 +1,6 @@
-numpy~=1.21.2
-mip~=1.13.0
-psycopg2~=2.9.1
+numpy
+mip
+psycopg2
+gdal
+simplejson
+networkx

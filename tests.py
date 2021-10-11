@@ -77,6 +77,21 @@ class OrienteeringProblemTestCase(TestCase):
         # self.assertEqual(len(route), 14)
         self.assertEqual(weight, 1010)
 
+    def test_one_endpoint_not_on_edge(self):
+        map = np.array([
+            [0, 0, 0],
+            [0, 0, 10],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 1000],
+        ])
+
+        inst = OrienteeringProblemInstance(map, (1, 1), (1, 1), 10, 1)
+        route, weight = inst.initial_route()
+        print(route)
+        # self.assertEqual(len(route), 14)
+        self.assertEqual(weight, 1010)
+
     def test_minimize(self):
         map = np.array([
             [0, -10],
