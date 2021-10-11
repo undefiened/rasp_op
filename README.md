@@ -4,7 +4,7 @@
 To run the program you need to install the dependencies from pip.
 You may use `pip install -r requirements.txt` to install the dependencies.
 You need to have any solver supported by `python-mip` to be installed locally. Please check https://www.python-mip.com/ for details.
-Currently, the solver by default is Gurobi, since it is faster.
+Currently, the solver by default is CBC, since it is open-source and doesn't need additional configuration, however Gurobi can easily be chosen.
 
 To connect to the database an `auth.py` file with the following structure needs to be created:
 ```

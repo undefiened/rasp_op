@@ -22,7 +22,7 @@ class OrienteeringProblemInstance:
     START_NODE_ID = -1
     END_NODE_ID = -2
 
-    def __init__(self, map: np.ndarray, starting_point: Tuple[int, int], end_point: Tuple[int, int], max_route_time_s: float, speed_cells_per_s: float):
+    def __init__(self, map: np.ndarray, starting_point: Tuple[int, int], end_point: Tuple[int, int], max_route_time_s: float, speed_cells_per_s: float, solver='CBC'):
         self.map = map
 
         self.starting_point = starting_point
@@ -33,6 +33,7 @@ class OrienteeringProblemInstance:
 
         self.time_limit = max_route_time_s
         self.speed = speed_cells_per_s
+        self.solver = solver
 
     def _number_of_nodes(self):
         return len(self._all_nodes())
@@ -78,7 +79,7 @@ class OrienteeringProblemInstance:
         return [x for x in self._all_nodes() if x not in (self.start_node, self.dest_node)]
 
     def _compute_route(self, visited_nodes: List[int], minimize_scores) -> Tuple[List[Tuple[int, int]], float]:
-        ip = Model("OP instance", solver_name="GRB")
+        ip = Model("OP instance", solver_name=self.solver)
         x = {j: {i: ip.add_var(var_type=BINARY) for i in self._all_nodes()} for j in self._all_nodes()}
         u = {i: ip.add_var(var_type=CONTINUOUS) for i in self._all_nodes()}
 
@@ -130,31 +131,11 @@ class OrienteeringProblemInstance:
 
         status = ip.optimize(max_seconds=self.MAX_SECONDS)
 
-        while True:
-            if status == OptimizationStatus.OPTIMAL or status == OptimizationStatus.FEASIBLE:
-                subtours = self._detect_subtours(x)
-
-                if subtours:
-                    raise Exception('There should not be any subtours') # I am temporarily leaving this code in case DFJ-style subtour elimination constraints can actually somehow work
-                    for subtour in subtours:
-                        # subtour elimination constraints DFJ
-                        ip.add_constr(xsum([x[i][k] for i in subtour for k in self._all_nodes_without(subtour)]))
-
-                    status = ip.optimize(max_seconds=self.MAX_SECONDS)
-                else:
-                    us = np.zeros_like(self.map)
-                    for i in self._all_nodes():
-                        pos = self._node_id_to_coord(i)
-                        us[pos[0], pos[1]] = float(u[i])
-
-                    route = self._unwrap_route(x)
-                    # self._print_all_edges(x)
-
-                    # print(us)
-                    # print(route)
-                    return route, float(ip.objective)
-            else:
-                raise NoRouteException('No route found at all!')
+        if status == OptimizationStatus.OPTIMAL or status == OptimizationStatus.FEASIBLE:
+            route = self._unwrap_route(x)
+            return route, float(ip.objective)
+        else:
+            raise NoRouteException('No route found at all!')
 
     def _detect_subtours(self, x):
         G = networkx.Graph()
@@ -346,7 +327,7 @@ if __name__ == "__main__":
 
     # print(log_not_prob_grid)
 
-    inst = OrienteeringProblemInstance(log_not_prob_grid, origin_point, origin_point, 10, 1)
+    inst = OrienteeringProblemInstance(log_not_prob_grid, origin_point, origin_point, 10, 1, solver='GRB')
     route, _ = inst.initial_route(minimize_scores=True)
 
     db.write_route(-1, route)
